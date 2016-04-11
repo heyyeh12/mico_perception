@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(object_perception)
 
+# FLANN dependencies
+FIND_LIBRARY(HDF5_LIBRARY hdf5 /usr/local/hdf5/lib/)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -11,29 +14,11 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-find_package(HDF5)
-if(HDF5_FOUND)
-
-  find_package(FLANN)
-  include_directories(${FLANN_INCLUDE_DIRS})
-
-  include_directories(${HDF5_INCLUDE_DIR})
-
-  add_executable(build_tree build_tree.cpp)
-  target_link_libraries(build_tree ${PCL_LIBRARIES} ${Boost_LIBRARIES}
-                                 ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY})
-
-  add_executable(nearest_neighbors nearest_neighbors.cpp)
-  target_link_libraries(nearest_neighbors ${PCL_LIBRARIES}
-                                        ${Boost_LIBRARIES} ${FLANN_LIBRARIES} ${HDF5_hdf5_LIBRARY}
-                                        )
-endif(HDF5_FOUND)
-
 
 ## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(PCL REQUIRED)
+find_package(OpenCV)
+find_package(Boost REQUIRED COMPONENTS system thread)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -116,38 +101,38 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
-## Declare a cpp library
-# add_library(object_perception
-#   src/${PROJECT_NAME}/object_perception.cpp
-# )
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a cpp executable
 add_executable(segment src/segment.cpp)
-# add_executable(vfh src/vfh.cpp)
-add_executable(build_tree src/build_tree.cpp)
-# add_executable(nearest_neighbors src/nearest_neighbors.cpp)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(object_perception_node object_perception_generate_messages_cpp)
-
-## Specify libraries to link a library or executable target against
-
 target_link_libraries(segment
   ${catkin_LIBRARIES}
 )
 
+# add_executable(vfh src/vfh.cpp)
 # target_link_libraries(vfh
 #   ${catkin_LIBRARIES}
 # )
+
+add_executable(build_tree src/build_tree.cpp)
 target_link_libraries(build_tree
   ${catkin_LIBRARIES}
+  ${HDF5_LIBRARY}
 )
-# target_link_libraries(nearest_neighbors
-#   ${catkin_LIBRARIES}
-# )
+
+add_executable(nearest_neighbors src/nearest_neighbors.cpp)
+target_link_libraries(nearest_neighbors
+  ${catkin_LIBRARIES}
+  ${HDF5_LIBRARY}
+  libvtkCommon.so
+  libvtkFiltering.so
+)
 
 #############
 ## Install ##
